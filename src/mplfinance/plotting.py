@@ -26,7 +26,7 @@ from mplfinance._widths import _determine_width_config
 from mplfinance._utils import _updown_colors
 from mplfinance._utils import IntegerIndexDateTimeFormatter
 from mplfinance._utils import _mscatter
-from mplfinance._utils import _check_and_convert_xlim_configuration
+from mplfinance._utils import _check_and_convert_xlim_and_xticks_configuration
 
 from mplfinance import _styles
 
@@ -272,6 +272,12 @@ def _valid_plot_kwargs():
 
         'warn_too_much_data'        : { 'Default'     : 599,
                                         'Validator'   : lambda value: isinstance(value,int) },
+
+        'xticks_version'            : { 'Default'     : 0,
+                                        'Validator'   : lambda value: isinstance(value,int) and value in (0,1) },
+
+        'xticks'                    : { 'Default'     : None,
+                                        'Validator'   : lambda value:_kwarg_not_implemented(value) },
     }
 
     _validate_vkwargs_dict(vkwargs)
@@ -296,7 +302,7 @@ def plot( data, **kwargs ):
     
     dates,opens,highs,lows,closes,volumes = _check_and_prepare_data(data, config)
 
-    config['xlim'] = _check_and_convert_xlim_configuration(data, config)
+    config['xlim'] = _check_and_convert_xlim_and_xticks_configuration(data, config)
 
     if config['type'] in VALID_PMOVE_TYPES and config['addplot'] is not None:
         err = "`addplot` is not supported for `type='" + config['type'] +"'`"
@@ -449,6 +455,9 @@ def plot( data, **kwargs ):
         axA1.set_xlim(config['xlim'][0], config['xlim'][1])
     elif config['tight_layout']:
         axA1.set_xlim(minx,maxx)
+
+    if config['xticks_version'] == 1:
+        axA1.set_xticks(config['xticks'])
 
     if (config['ylim'] is None and
         config['xlim'] is None and

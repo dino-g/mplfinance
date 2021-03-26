@@ -63,24 +63,41 @@ def _check_input(opens, closes, highs, lows):
     if not same_missing:
         raise ValueError('O,H,L,C must have the same missing data!')
 
-def _check_and_convert_xlim_configuration(data, config):
+def _check_and_convert_xlim_and_xticks_configuration(data, config):
     '''
-    Check, if user entered `xlim` kwarg, if user entered dates
-    then we may need to convert them to iloc or matplotlib dates.
+    This function does two things:
+    1. Check, if user entered `xlim` kwarg.  If user entered dates
+       then we may need to convert them to iloc or matplotlib dates.
+    2. Calculate xticks based on xlim and data, and convert xticks
+       to iloc if necessary.
     '''
-    if config['xlim'] is None:
-        return None
-
     xlim = config['xlim']
 
-    if not _xlim_validator(xlim):
-        raise ValueError('Bad xlim configuration #1')
+    if xlim is not None:
+        if not _xlim_validator(xlim):
+            raise ValueError('Bad xlim configuration.')
+        if all([_is_datelike(dt) for dt in xlim]):
+            if config['show_nontrading']:
+                xlim = [ _date_to_mdate(dt) for dt in xlim]
+            else:
+                xlim = [ _date_to_iloc_extrapolate(data.index.to_series(),dt) for dt in xlim]
 
-    if all([_is_datelike(dt) for dt in xlim]):
-        if config['show_nontrading']:
-            xlim = [ _date_to_mdate(dt) for dt in xlim]
+    if config['xticks_version'] == 1:
+        # TODO: Put in a check for config['xlim'] being Non-dates (i.e. int or float)
+        #       and, if so, convert to dates for `adt_locator.tick_values()` call.
+        if config['xlim'] is None:
+            datalimits = (data.index[0],data.index[-1])
         else:
-            xlim = [ _date_to_iloc_extrapolate(data.index.to_series(),dt) for dt in xlim]
+            datalimits = [pd.to_datetime(d) for d in config['xlim']]
+        adt_locator = mdates.AutoDateLocator()
+        print('datalimits[0],datalimits[1] =',datalimits[0],datalimits[1])
+        config['xticks'] = adt_locator.tick_values(datalimits[0],datalimits[1])
+        if not config['show_nontrading']:
+            xtnew = []
+            for xt in config['xticks']:
+                date = mdates.num2date(xt).replace(tzinfo=None)
+                xtnew.append( _date_to_iloc_extrapolate(data.index.to_series(),date) )
+            config['xticks'] = xtnew
         
     return xlim
 
