@@ -93,14 +93,18 @@ def _check_and_convert_xlim_and_xticks_configuration(data, config):
         print('datalimits[0],datalimits[1] =',datalimits[0],datalimits[1])
         config['xticks'] = adt_locator.tick_values(datalimits[0],datalimits[1])
         print('\nconfig[\'xticks\']=',config['xticks'])
+        #for xt1,xt0 in zip(config['xticks'][1:],config['xticks']):
+        #    print(xt1,'-',xt0,'=',xt1-xt0)
         tempmdates = mdates.num2date(config['xticks'])
         tempxticks = [str(d) for d in tempmdates]
         print('\nmdates.num2date(config[\'xticks\'])=',tempxticks)
         if not config['show_nontrading']:
             xtnew = []
             for xt in config['xticks']:
-                date = mdates.num2date(xt).replace(tzinfo=None)
-                xtnew.append( _date_to_iloc_extrapolate(data.index.to_series(),date) )
+                date   = mdates.num2date(xt).replace(tzinfo=None)
+                new_xt = _date_to_iloc_extrapolate(data.index.to_series(),date)
+                if len(xtnew) < 1 or ((new_xt - xtnew[-1]) > 1.01): # filter out "duplicates"
+                    xtnew.append( new_xt )
             config['xticks'] = xtnew
             # TODO: Maybe here, since this is "DataFrame Rows", we truncate 
             #       each to its integer, and remove duplicates (or remove
@@ -114,11 +118,16 @@ def _check_and_convert_xlim_and_xticks_configuration(data, config):
             # 
             # mdates.num2date(config['xticks'])= ['2019-11-05 08:00:00+00:00',
             #                '2019-11-05 12:00:00+00:00', '2019-11-05 16:00:00+00:00',
-            #                '2019-11-05 20:00:00+00:00', '2019-11-06 00:00:00+00:00', '2019-11-06 04:00:00+00:00', '2019-11-06 08:00:00+00:00', '2019-11-06 12:00:00+00:00', '2019-11-06 16:00:00+00:00', '2019-11-06 20:00:00+00:00']
+            #                '2019-11-05 20:00:00+00:00', '2019-11-06 00:00:00+00:00',
+            #                '2019-11-06 04:00:00+00:00', '2019-11-06 08:00:00+00:00',
+            #                '2019-11-06 12:00:00+00:00', '2019-11-06 16:00:00+00:00',
+            #                '2019-11-06 20:00:00+00:00']
             # 
             # config['xticks']= [-29.853472074493766, 150.0, 390.0, 390.5, 390.5, 390.5, 390.5, 541.0, 781.0, 781.5]
-
             print('\nconfig[\'xticks\']=',config['xticks'])
+            #for xt1,xt0 in zip(config['xticks'][1:],config['xticks']):
+            #    print(xt1,'-',xt0,'=',xt1-xt0)
+            
         
     return xlim
 
