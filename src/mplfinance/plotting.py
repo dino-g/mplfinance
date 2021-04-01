@@ -189,6 +189,9 @@ def _valid_plot_kwargs():
         'xlim'                      : {'Default'      : None,
                                        'Validator'    : lambda value: _xlim_validator(value) },
  
+        '_xlim'                     : {'Default'      : None,
+                                       'Validator'    : lambda value:_kwarg_not_implemented(value) },
+ 
         'set_ylim_panelB'           : {'Default'      : None,
                                        'Validator'    : lambda value: _warn_set_ylim_deprecated(value) },
  
@@ -277,6 +280,9 @@ def _valid_plot_kwargs():
                                         'Validator'   : lambda value: isinstance(value,int) and value in (0,1) },
 
         'xticks'                    : { 'Default'     : None,
+                                        'Validator'   : lambda value: isinstance(value,str) },
+
+        '_xticks'                   : { 'Default'     : None,
                                         'Validator'   : lambda value:_kwarg_not_implemented(value) },
     }
 
@@ -302,7 +308,7 @@ def plot( data, **kwargs ):
     
     dates,opens,highs,lows,closes,volumes = _check_and_prepare_data(data, config)
 
-    config['xlim'] = _check_and_convert_xlim_and_xticks_configuration(data, config)
+    config['_xlim'] = _check_and_convert_xlim_and_xticks_configuration(data, config)
 
     if config['type'] in VALID_PMOVE_TYPES and config['addplot'] is not None:
         err = "`addplot` is not supported for `type='" + config['type'] +"'`"
@@ -419,6 +425,10 @@ def plot( data, **kwargs ):
     else:
         mavprices = _plot_mav(axA1,config,xdates,closes)
 
+    # TODO: Really need to have something here to either relate
+    #       minx,miny to config['_xlim'] or just use config['_xlim']
+    #       (just need to integrate logic here with logic there).
+
     avg_dist_between_points = (xdates[-1] - xdates[0]) / float(len(xdates))
     if not config['tight_layout']:
         minx = xdates[0]  - avg_dist_between_points
@@ -451,13 +461,13 @@ def plot( data, **kwargs ):
             setminy = miny-ydelta
         axA1.set_ylim(setminy,maxy+ydelta)
 
-    if config['xlim'] is not None:
+    if config['_xlim'] is not None:
         axA1.set_xlim(config['xlim'][0], config['xlim'][1])
     elif config['tight_layout']:
         axA1.set_xlim(minx,maxx)
 
     if config['xticks_version'] == 1:
-        axA1.set_xticks(config['xticks'])
+        axA1.set_xticks(config['_xticks'])
 
     if (config['ylim'] is None and
         config['xlim'] is None and

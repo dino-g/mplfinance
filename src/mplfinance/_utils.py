@@ -81,6 +81,7 @@ def _check_and_convert_xlim_and_xticks_configuration(data, config):
                 xlim = [ _date_to_mdate(dt) for dt in xlim]
             else:
                 xlim = [ _date_to_iloc_extrapolate(data.index.to_series(),dt) for dt in xlim]
+        config['_xlim'] = xlim
 
     if config['xticks_version'] == 1:
         # TODO: Put in a check for config['xlim'] being Non-dates (i.e. int or float)
@@ -89,44 +90,31 @@ def _check_and_convert_xlim_and_xticks_configuration(data, config):
             datalimits = (data.index[0],data.index[-1])
         else:
             datalimits = [pd.to_datetime(d) for d in config['xlim']]
-        adt_locator = mdates.AutoDateLocator()
         print('datalimits[0],datalimits[1] =',datalimits[0],datalimits[1])
-        config['xticks'] = adt_locator.tick_values(datalimits[0],datalimits[1])
-        print('\nconfig[\'xticks\']=',config['xticks'])
-        #for xt1,xt0 in zip(config['xticks'][1:],config['xticks']):
-        #    print(xt1,'-',xt0,'=',xt1-xt0)
-        tempmdates = mdates.num2date(config['xticks'])
-        tempxticks = [str(d) for d in tempmdates]
-        print('\nmdates.num2date(config[\'xticks\'])=',tempxticks)
+
+        first = _date_to_mdate(data.index[0])
+        last  = _date_to_mdate(data.index[-1])
+        avg_days_between_points = (last - first)/float(len(data))
+        print('avg_days_between_points=',avg_days_between_points)
+        # if avg_days_between_points < 0.33:  # intraday (not daily)
+
+        diffs = [x2-x1 for x1,x2 in zip(data.index[0:],data.index[1:])]
+
+        adt_locator = mdates.AutoDateLocator()
+        config['_xticks'] = adt_locator.tick_values(datalimits[0],datalimits[1])
+        print('\nconfig[\'_xticks\']=',config['_xticks'])
+        # tempmdates = mdates.num2date(config['_xticks'])
+        # tempxticks = [str(d) for d in tempmdates]
+        # print('\nmdates.num2date(config[\'xticks\'])=',tempxticks)
         if not config['show_nontrading']:
             xtnew = []
-            for xt in config['xticks']:
+            for xt in config['_xticks']:
                 date   = mdates.num2date(xt).replace(tzinfo=None)
                 new_xt = _date_to_iloc_extrapolate(data.index.to_series(),date)
-                if len(xtnew) < 1 or ((new_xt - xtnew[-1]) > 1.01): # filter out "duplicates"
-                    xtnew.append( new_xt )
-            config['xticks'] = xtnew
-            # TODO: Maybe here, since this is "DataFrame Rows", we truncate 
-            #       each to its integer, and remove duplicates (or remove
-            #       those that are much close to each other than others).
-            #
-            # datalimits[0],datalimits[1] = 2019-11-05 08:00:00 2019-11-06 20:00:00
-            # 
-            # config['xticks']= [18205.33333333 18205.5        18205.66666667 18205.83333333
-            # 18206.         18206.16666667 18206.33333333 18206.5
-            # 18206.66666667 18206.83333333]
-            # 
-            # mdates.num2date(config['xticks'])= ['2019-11-05 08:00:00+00:00',
-            #                '2019-11-05 12:00:00+00:00', '2019-11-05 16:00:00+00:00',
-            #                '2019-11-05 20:00:00+00:00', '2019-11-06 00:00:00+00:00',
-            #                '2019-11-06 04:00:00+00:00', '2019-11-06 08:00:00+00:00',
-            #                '2019-11-06 12:00:00+00:00', '2019-11-06 16:00:00+00:00',
-            #                '2019-11-06 20:00:00+00:00']
-            # 
-            # config['xticks']= [-29.853472074493766, 150.0, 390.0, 390.5, 390.5, 390.5, 390.5, 541.0, 781.0, 781.5]
-            print('\nconfig[\'xticks\']=',config['xticks'])
-            #for xt1,xt0 in zip(config['xticks'][1:],config['xticks']):
-            #    print(xt1,'-',xt0,'=',xt1-xt0)
+                #if len(xtnew) < 1 or ((new_xt - xtnew[-1]) > 1.01): # filter out "duplicates"
+                xtnew.append( new_xt )
+            config['_xticks'] = xtnew
+            print('\nconfig[\'_xticks\']=',config['_xticks'])
             
         
     return xlim
