@@ -84,6 +84,7 @@ def _check_and_convert_xlim_and_xticks_configuration(data, config):
         config['_xlim'] = xlim
 
     if config['xticks_version'] == 1:
+
         # TODO: Put in a check for config['xlim'] being Non-dates (i.e. int or float)
         #       and, if so, convert to dates for `adt_locator.tick_values()` call.
         if config['xlim'] is None:
@@ -98,10 +99,38 @@ def _check_and_convert_xlim_and_xticks_configuration(data, config):
         print('avg_days_between_points=',avg_days_between_points)
         # if avg_days_between_points < 0.33:  # intraday (not daily)
 
-        diffs = [x2-x1 for x1,x2 in zip(data.index[0:],data.index[1:])]
+        diffs  = [x2-x1 for x1,x2 in zip(data.index[0:],data.index[1:])]
+        xticks = []
+        xmin   = data.index[0]
+        gap    = 4*diffs[0]  # Arbitrary definition of a gap as > 4*previous diff
+        adl    = mdates.AutoDateLocator()
+        next_segment = False
+        for ix,diff in zip(data.index,diffs):
+            if diff > gap:
+                xmax = ix
+                # print('diff,gap=',diff,',',gap)
+                # print('xmin,xmax=',xmin,',',xmax)
+                xtks = adl.tick_values(xmin,xmax)
+                xticks.extend(xtks)
+                next_segment = True
+            elif next_segment:
+                # print('assign xmin =',ix)
+                xmin = ix
+                gap = 4*diff
+                next_segment = False
+        xmax = ix
+        print('diff,gap=',diff,',',gap)
+        print('xmin,xmax=',xmin,',',xmax)
+        xtks = adl.tick_values(xmin,xmax)
+        xticks.extend(xtks)
+        if len(xticks) >= 12:
+            mod = int(len(xticks)/6.0)
+            print('reduce xticks, mod =',mod)
+            print('xticks(before) =',xticks)
+            xticks = [xt for jj,xt in enumerate(xticks) if jj%mod == 0]
+            print('xticks(after) =',xticks)
 
-        adt_locator = mdates.AutoDateLocator()
-        config['_xticks'] = adt_locator.tick_values(datalimits[0],datalimits[1])
+        config['_xticks'] = xticks
         print('\nconfig[\'_xticks\']=',config['_xticks'])
         # tempmdates = mdates.num2date(config['_xticks'])
         # tempxticks = [str(d) for d in tempmdates]
