@@ -10,7 +10,7 @@ if __sys.version_info <= (3, 6):
     __os.environ["PYTHONWARNINGS"] = "default::ImportWarning:mplfinance"              # Also affect subprocesses
     __warnings.warn('\n\n ================================================================= '+
                     '\n\n    WARNING: `mplfinance` is NOT supported for Python versions '+
-                    '\n               less than 3.6'
+                    '\n               less than 3.6 (this is a test merge)'
                     '\n\n ================================================================= ',
                     category=ImportWarning)
 
